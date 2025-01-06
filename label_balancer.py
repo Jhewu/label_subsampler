@@ -195,15 +195,18 @@ def ImageToAugment():
     category_1_images = [] 
     category_2_images = []
 
-    # Prepare category 1
-    category_1_dirs = [os.path.join(dataset_dir, "1"), 
-                       os.path.join(dataset_dir, "2"), 
-                       os.path.join(dataset_dir, "3")]
+    all_label_dirs = [os.path.join(dataset_dir, "1"),
+                        os.path.join(dataset_dir, "2"), 
+                        os.path.join(dataset_dir, "3"), 
+                        os.path.join(dataset_dir, "4"), 
+                        os.path.join(dataset_dir, "5"), 
+                        os.path.join(dataset_dir, "6")]   
 
+    # Prepare category 1
     category_1_list = [
-        os.listdir(category_1_dirs[0]), 
-        os.listdir(category_1_dirs[1]), 
-        os.listdir(category_1_dirs[2])]
+        os.listdir(all_label_dirs[0]), 
+        os.listdir(all_label_dirs[1]), 
+        os.listdir(all_label_dirs[2])]
 
     for i in range(len(category_1_list)): 
         category_1_images.extend(category_1_list[i])
@@ -211,33 +214,31 @@ def ImageToAugment():
     category_1_count = len(category_1_images)
 
     # Prepare category 2
-    category_1_dirs = [os.path.join(dataset_dir, "4"), 
-                       os.path.join(dataset_dir, "5"), 
-                       os.path.join(dataset_dir, "6")]
-
     category_2_list = [
-        os.listdir(category_1_dirs[0]), 
-        os.listdir(category_1_dirs[1]), 
-        os.listdir(category_1_dirs[2])]
+        os.listdir(all_label_dirs[3]), 
+        os.listdir(all_label_dirs[4]), 
+        os.listdir(all_label_dirs[5])]
 
     for i in range(len(category_2_list)): 
         category_2_images.extend(category_2_list[i])
     
     category_2_count = len(category_2_images)
 
-    # Create the destination directories
-    dest_dir_list = [os.path.join(dest_dir, "1"), 
-                     os.path.join(dest_dir, "2"), 
-                     os.path.join(dest_dir, "3"), 
-                     os.path.join(dest_dir, "4"), 
-                     os.path.join(dest_dir, "5"), 
-                     os.path.join(dest_dir, "6")] 
+    print(category_2_count)
 
-    # Copy all directories to the destination directories
-    max_workers = 10
-    with ThreadPoolExecutor(max_workers=max_workers) as executor: 
-        for i in range(3): 
-            executor.submit(shutil.copytree, source_dir, dest_dir_list[i])
+    # # Create the destination directories
+    # dest_dir_list = [os.path.join(dest_dir, "1"), 
+    #                  os.path.join(dest_dir, "2"), 
+    #                  os.path.join(dest_dir, "3"), 
+    #                  os.path.join(dest_dir, "4"), 
+    #                  os.path.join(dest_dir, "5"), 
+    #                  os.path.join(dest_dir, "6")] 
+
+    # # Copy all directories to the destination directories
+    # max_workers = 10
+    # with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+    #     for i in range(3): 
+    #         executor.submit(shutil.copytree, source_dir, dest_dir_list[i])
 
 
     # # Copy all directories to the destination directories
