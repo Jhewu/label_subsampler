@@ -1,6 +1,7 @@
 import cv2 as cv
 from math import floor, ceil
 import os
+import shutil
 
 """
 HELPER FUNCTIONS USED IN
@@ -64,3 +65,10 @@ def SortDict(dict):
 
 def Get_center(coord):
    return ceil((coord-1)/2.0)
+
+def copy_dir(src, dst): 
+   try: 
+      shutil.copytree(src, dst)
+   except Exception as e:
+      print(f"Error copying {src} to {dst}: {e}")
+

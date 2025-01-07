@@ -55,7 +55,8 @@ FOLDER_LABELS = ["6"]                            # the name of the folder
 ADD_DISCARDED = True
 
 
-DATASET_NAME = "flow_600_200"
+# DATASET_NAME = "flow_600_200"
+DATASET_NAME = "flow_300_100"
 SEED = 42
 
 DEST_FOLDER = "balanced_data"
@@ -195,12 +196,13 @@ def ImageToAugment():
     category_1_images = [] 
     category_2_images = []
 
-    all_label_dirs = [os.path.join(dataset_dir, "1"),
-                        os.path.join(dataset_dir, "2"), 
-                        os.path.join(dataset_dir, "3"), 
-                        os.path.join(dataset_dir, "4"), 
-                        os.path.join(dataset_dir, "5"), 
-                        os.path.join(dataset_dir, "6")]   
+    all_label_dirs = [os.path.join(dataset_dir, str(i)) for i in range(1, 7)]
+    # all_label_dirs = [os.path.join(dataset_dir, "1"),
+    #                     os.path.join(dataset_dir, "2"), 
+    #                     os.path.join(dataset_dir, "3"), 
+    #                     os.path.join(dataset_dir, "4"), 
+    #                     os.path.join(dataset_dir, "5"), 
+    #                     os.path.join(dataset_dir, "6")]   
 
     # Prepare category 1
     category_1_list = [
@@ -224,62 +226,69 @@ def ImageToAugment():
     
     category_2_count = len(category_2_images)
 
-    print(category_2_count)
+    """Copy all of the files here"""
 
-    # # Create the destination directories
-    # dest_dir_list = [os.path.join(dest_dir, "1"), 
+    # Create the destination directories
+    dest_label_dirs = [os.path.join(dest_dir, str(i)) for i in range(1, 7)]
+    # dest_label_dirs = [os.path.join(dest_dir, "1"), 
     #                  os.path.join(dest_dir, "2"), 
     #                  os.path.join(dest_dir, "3"), 
     #                  os.path.join(dest_dir, "4"), 
     #                  os.path.join(dest_dir, "5"), 
     #                  os.path.join(dest_dir, "6")] 
 
-    # # Copy all directories to the destination directories
+    for dir in dest_label_dirs: 
+        CreateDir(dir)
+
+    # Copy all directories to the destination directories
+    """ENSURE THAT THIS WORK IN MAIN COMPUTER"""
     # max_workers = 10
     # with ThreadPoolExecutor(max_workers=max_workers) as executor: 
-    #     for i in range(3): 
-    #         executor.submit(shutil.copytree, source_dir, dest_dir_list[i])
+    #     executor.map(copy_dir, all_label_dirs, dest_label_dirs)
+    """ENSURE THAT THIS WORK IN MAIN COMPUTER"""
 
+    if category_1_count > category_2_count: 
+        print("\nCategory 1 larger than Category 2\n")
+    else: 
+        print("\nCategory 2 larger than Category 1\n")
 
-    # # Copy all directories to the destination directories
-    # for i in range(6): 
-    #     shutil.copytree(source_dir, destination_dir)
+        images_to_augment = category_2_count - category_1_count
+        print(f"\nImages to augment: {images_to_augment}\n")
 
-    # if category_1_count > category_2_count: 
-    #     print("\nCategory 1 larger than Category 2\n")
-    # else: 
-    #     print("\nCategory 2 larger than Category 1\n")
-
-    #     images_to_augment = category_2_count - category_1_count
-    #     print(f"\nImages to augment: {images_to_augment}\n")
-
-    #     # Get counts of each label in category 1
-    #     label_1_count = len(label_1_images)
-    #     label_2_count = len(label_2_images)
-    #     label_3_count = len(label_3_images)
-
-    #     # Compute the complementary probabilities for sampling
-    #     total_images_cat1 = label_1_count + label_2_count + label_3_count
-    #     p_label_1 = 1 - (label_1_count / total_images_cat1)
-    #     p_label_2 = 1 - (label_2_count / total_images_cat1)
-    #     p_label_3 = 1 - (label_3_count / total_images_cat1)
-
-    #     # Normalize the probabilities to 1, before sampling
-    #     p_total = p_label_1 + p_label_2 + p_label_3
-    #     p_label_1 /= p_total
-    #     p_label_2 /= p_total
-    #     p_label_3 /= p_total
-
-    #     # Use numpy to sample which labels to augment
-    #     sample = list(np.random.choice([1, 2, 3], images_to_augment, p=[p_label_1, p_label_2, p_label_3], replace=True))
+        if category_1_count * TOTAL_MULTIPLIER < images_to_augment: 
+            print("\nCategory 1 does not contain enough images to augment to Category 2")
+            print("The script will terminate\n")
+            return
         
-    #     # Count how many images to augment for each label
-    #     labels_to_augment_list = [sample.count(1), sample.count(2), sample.count(3)]
-    #     all_label_dir = [label_1_dir, label_2_dir, label_3_dir]
+        print("\nCategory 1 does contain enough images to augment to Category 2")
+        print("Proceeding to augment\n")
 
-    #     # 
+        # Get counts of each label in category 1
+        category_1_count_split = [
+            len(category_1_list[0]), 
+            len(category_1_list[1]), 
+            len(category_1_list[2])]
+        
+        print(category_1_count_split)
 
+        # Compute the complementary probabilities for sampling
+        p_label_1 = 1 - (category_1_count_split[0] / category_1_count)
+        p_label_2 = 1 - (category_1_count_split[1] / category_1_count)
+        p_label_3 = 1 - (category_1_count_split[2] / category_1_count)
 
+        # Normalize the probabilities to 1, before sampling
+        p_total = p_label_1 + p_label_2 + p_label_3
+        p_label_1 /= p_total
+        p_label_2 /= p_total
+        p_label_3 /= p_total
+
+        # Use numpy to sample which labels to augment
+        sample = list(np.random.choice([1, 2, 3], images_to_augment, p=[p_label_1, p_label_2, p_label_3], replace=True))
+        
+        # Count how many images to augment for each label
+        aug_labels = [sample.count(1), sample.count(2), sample.count(3)]
+
+        print(aug_labels)
 
 
     #     print(labels_to_augment_list)
@@ -289,6 +298,8 @@ def ImageToAugment():
     #     for i in range(len(labels_to_augment_list)):
     #         print(f"\nAugmenting label {i+1}\n")
     #         DataBalancer(labels_to_augment_list[i], all_label_dir[i])
+
+
 
 if __name__ == "__main__":
     ImageToAugment()
