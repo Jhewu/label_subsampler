@@ -56,18 +56,18 @@ ADD_DISCARDED = True
 
 
 # DATASET_NAME = "flow_600_200"
-DATASET_NAME = "flow_300_100"
+DATASET_NAME = "toy_dataset"
 SEED = 42
 
 DEST_FOLDER = "balanced_data"
 
-def DataBalancer(images_to_aumgment, label_dir): 
+def DataBalancer(images_to_aumgment, label_dir, dest_dir, label): 
     """
     Balances a label by starting with the site id
     with the least amount of images and so forth
     """
 
-    # Obtain image directory
+    # Create the list of images
     image_list = os.listdir(label_dir)
 
     # Declare dictionary to count number of images in site_id
@@ -78,106 +78,79 @@ def DataBalancer(images_to_aumgment, label_dir):
     site_path = {}          # dictionary with a list inside
                             # e.g. [site_id: ]
 
+    """MIGHT NOT NEED THIS VARIABLE"""
     # Declare dictionary to store file names to name the files
     img_file_name = {}
-
-    # Fetch date for naming convention
-    current_date = datetime.datetime.now()
-    formatted_date = current_date.strftime("%m%d%y")
 
     # Count site_id and append full_file_path
     total_files = 0
     for file_name in image_list:
         total_files += 1
         full_file_path = os.path.join(label_dir, file_name)
-        image_name = os.path.basename(full_file_path)
-        site_id = image_name.split("_")[0]
+        site_id = file_name.split("_")[0]
 
         if site_id in site_ids_count:
             site_ids_count[site_id] += 1
             site_path[site_id].append(full_file_path)
-            img_file_name[site_id].append(image_name)
+            # img_file_name[site_id].append(image_name)
         else:
             site_ids_count[site_id] = 1
             site_path[site_id] = [full_file_path]
-            img_file_name[site_id] = [image_name]
+            # img_file_name[site_id] = [image_name]
 
-    # sort the dictionary, and turn it into a list
-    sorted_list = SortDict(site_ids_count)
-    
-    CreateDir(new_folder_name)
-    destination = os.path.join(root_dir, new_folder_name)
+    # Sort the dictionary, and turn it into a list
+    sorted_list = SortDict(site_ids_count)    
 
-    # # Transfer all the images from the max to the
-    # # new directory
-    # max_site = sorted_list[-1][0]
-    # for site_img in range(max):
-    #     shutil.copy(site_path[max_site][site_img], destination)
+    # Fetch date for naming convention
+    current_date = datetime.datetime.now()
+    formatted_date = current_date.strftime("%m%d%y")
 
-    # # delete the site from all dict and list
-    # del site_path[max_site]
-    # del site_ids_count[max_site]
-    # del img_file_name[max_site]
-    # sorted_list.remove(sorted_list[-1])
+    # Augment from the site ids with the lowest number of 
+    # images until it reaches images_to_augment (total number to augment)
+    counter = 1             # --> counter for number of images currently augmented 
+    for element in sorted_list: 
+        # Element is shaped like this: ('site_id', 2)
+        # first element is the site_id (a string)
+        # second element is the count
 
-    # # for both the shuffling between the site_path
-    # # and img_file_name to be the same
-    # seed = 42
+        for site in site_path[element[0]]: 
+            # Now augment the original images,
+            # to reach the max. The code is applying
+            # the minimum degree of rotation to each
+            # image in order to reach the image count
+            switch = -1                                     # --> (see more down), rotations only or horizontal flipped rotations
+            theta = THETA
+            fact = FACT
 
-    # # copy image_count amount of images from each site ids
-    # # onto the new folder, and augment the rest to meet the
-    # # max amount of images
-    # site_number = 0
-    # for site in site_path:
-    #     # copy all the original images
-    #     for site_img in range(site_ids_count[site]):
-    #         shutil.copy(site_path[site][site_img], destination)
-        
-    #     # randomly shuffle the list contents
-    #     # so that the balancing is not deterministic
-    #     random.seed(seed)
-    #     random.shuffle(site_path[site])
-    #     random.shuffle(img_file_name[site])
+            # After the switch is triggered two times, 
+            # increase THETA and FACT            
+            switch_ended = 1    
 
-    #     # already used all of the original images
-    #     # ... now augment the original images,
-    #     # to reach the max. The code is applying
-    #     # the minimum degree of rotation to each
-    #     # image in order to reach the image count
-    #     image_count_aug = max - site_ids_count[site]    # --> number of images to augment to reach max
-    #     counter = 1                               # --> counter for number of images currently augmented 
-    #     switch = -1                               # --> (see more down), rotations only or horizontal flipped rotations
-    #     theta = THETA
-    #     fact = FACT
+            # Continue to augment until you reached: 
+            # 1) the end of images_to_augment
+            # 2) the end of the multiplier (e.g. ran out of rotations and horizontal flip)
+            for i in range(MULTIPLIER*2):
+                print(counter)
+                new_file_name = f"S{site}_D{formatted_date}_{formatted_date}_0_{i}_ROT_AUG_{label}.JPG"
+                new_destination = os.path.join(dest_dir, new_file_name)
 
-    #     switch_ended = 1                          # ---> after the switch is triggered two times, increase THETA and FACT
-    #     while counter <= image_count_aug:            # --> continue to augment in case rotation or flip rotation is not enough
-    #         #print(f"There are {image_count_aug} images to augment in site {site}, and we are in {counter}")
-    #         for site_img in range(site_ids_count[site]):
-    #             new_destination = os.path.join(destination, f"{img_file_name[site][site_img]}_augmented_{counter}.JPG")
-    #             if counter > image_count_aug:       # --> if we reached enough images within the loop
-    #                 #print(f"\nBroke when counter was {counter}, and image_count_aug was {image_count_aug}\n")
-    #                 break
-    #             elif switch == -1: #  case 1: only rotations
-    #                 augmented_img = Data_augmentation(site_path[site][site_img], theta, fact, False)
-    #                 cv.imwrite(new_destination, augmented_img)
-    #                 counter+=1
-    #             elif switch == 1:  # case 2: only horizontal flipped rotations
-    #                 augmented_img = Data_augmentation(site_path[site][site_img], theta, fact, True)
-    #                 cv.imwrite(new_destination, augmented_img)
-    #                 counter+=1
-    #         switch = switch*-1
-    #         if switch_ended % 2 == 0:
-    #             theta+=5
-    #             fact+=0.3 # --> these THETA and FACT values ensure no black padding on final image
-    #         switch_ended+=1
-    #     site_number+=1
-    #     #print(f"There are {len(site_path)+1} number of sites, and we are in {site_number}")
+                if counter > images_to_aumgment:       # --> if we reached enough images within the loop
+                    print(f"\nReached enough images, balancing is finished for {label}")
+                    return
+                elif switch == -1: #  case 1: only rotations
+                    augmented_img = Data_augmentation(site, theta, fact, False)
+                    cv.imwrite(new_destination, augmented_img)
+                    counter+=1
+                elif switch == 1:  # case 2: only horizontal flipped rotations
+                    augmented_img = Data_augmentation(site, theta, fact, True)
+                    cv.imwrite(new_destination, augmented_img)
+                    counter+=1
 
-    # print(f"\n Data balanced is completed for {label}!\n")
-    # print(f"\n Original dataset contained {total_files} number of images\n")
-    # print(f"\n Augmented dataset contains {max * (len(sorted_list)+1)} number of images\n")
-    return 
+                switch = switch*-1
+                if switch_ended % 2 == 0:
+                    theta+=5
+                    fact+=0.3   # --> these THETA and FACT values ensure no black padding on final image
+                switch_ended+=1
 
 def ImageToAugment():
     """
@@ -209,7 +182,7 @@ def ImageToAugment():
         os.listdir(all_label_dirs[0]), 
         os.listdir(all_label_dirs[1]), 
         os.listdir(all_label_dirs[2])]
-
+    
     for i in range(len(category_1_list)): 
         category_1_images.extend(category_1_list[i])
     
@@ -226,8 +199,6 @@ def ImageToAugment():
     
     category_2_count = len(category_2_images)
 
-    """Copy all of the files here"""
-
     # Create the destination directories
     dest_label_dirs = [os.path.join(dest_dir, str(i)) for i in range(1, 7)]
     # dest_label_dirs = [os.path.join(dest_dir, "1"), 
@@ -237,31 +208,30 @@ def ImageToAugment():
     #                  os.path.join(dest_dir, "5"), 
     #                  os.path.join(dest_dir, "6")] 
 
-    for dir in dest_label_dirs: 
-        CreateDir(dir)
-
     # Copy all directories to the destination directories
-    """ENSURE THAT THIS WORK IN MAIN COMPUTER"""
-    # max_workers = 10
-    # with ThreadPoolExecutor(max_workers=max_workers) as executor: 
-    #     executor.map(copy_dir, all_label_dirs, dest_label_dirs)
-    """ENSURE THAT THIS WORK IN MAIN COMPUTER"""
 
     if category_1_count > category_2_count: 
         print("\nCategory 1 larger than Category 2\n")
+        """ADD THE SECOND HALF HERE"""
     else: 
         print("\nCategory 2 larger than Category 1\n")
 
         images_to_augment = category_2_count - category_1_count
-        print(f"\nImages to augment: {images_to_augment}\n")
+        print(f"Images to augment: {images_to_augment}\n")
 
         if category_1_count * TOTAL_MULTIPLIER < images_to_augment: 
-            print("\nCategory 1 does not contain enough images to augment to Category 2")
-            print("The script will terminate\n")
+            print("Category 1 does not contain enough images to augment to Category 2")
+            print("The script will terminate...\n")
             return
         
-        print("\nCategory 1 does contain enough images to augment to Category 2")
-        print("Proceeding to augment\n")
+        print("Category 1 does contain enough images to augment to Category 2")
+        print("Proceeding to augment...\n")
+
+        """ENABLE THIS IN THE MAIN COMPUTER"""
+        # max_workers = 10
+        # with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+        #     executor.map(copy_dir, all_label_dirs, dest_label_dirs)
+        print(f"Copying original files to {dest_dir}...\n")
 
         # Get counts of each label in category 1
         category_1_count_split = [
@@ -269,8 +239,6 @@ def ImageToAugment():
             len(category_1_list[1]), 
             len(category_1_list[2])]
         
-        print(category_1_count_split)
-
         # Compute the complementary probabilities for sampling
         p_label_1 = 1 - (category_1_count_split[0] / category_1_count)
         p_label_2 = 1 - (category_1_count_split[1] / category_1_count)
@@ -286,20 +254,15 @@ def ImageToAugment():
         sample = list(np.random.choice([1, 2, 3], images_to_augment, p=[p_label_1, p_label_2, p_label_3], replace=True))
         
         # Count how many images to augment for each label
-        aug_labels = [sample.count(1), sample.count(2), sample.count(3)]
+        images_to_aug_per_label = [sample.count(1), sample.count(2), sample.count(3)]
 
-        print(aug_labels)
-
-
-    #     print(labels_to_augment_list)
-
-    #     """ADD SUBPROCESS HERE"""
-    #     """ALSO NEED TO COPY THE ORIGINAL DATA TO A DESTINATION FOLDER"""
-    #     for i in range(len(labels_to_augment_list)):
-    #         print(f"\nAugmenting label {i+1}\n")
-    #         DataBalancer(labels_to_augment_list[i], all_label_dir[i])
-
-
+        """ADD SUBPROCESS HERE"""
+        for i in range(len(images_to_aug_per_label)):
+            print(f"Augmenting label {i+1}...\n")
+            DataBalancer(images_to_aumgment=images_to_aug_per_label[i], 
+                         label_dir=all_label_dirs[i],
+                         dest_dir=dest_label_dirs[i], 
+                         label=f"L{i+1}")
 
 if __name__ == "__main__":
     ImageToAugment()
