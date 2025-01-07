@@ -66,6 +66,7 @@ def DataBalancer(images_to_aumgment, label_dir, dest_dir, label):
     Balances a label by starting with the site id
     with the least amount of images and so forth
     """
+    print(images_to_aumgment)
 
     # Create the list of images
     image_list = os.listdir(label_dir)
@@ -76,11 +77,7 @@ def DataBalancer(images_to_aumgment, label_dir, dest_dir, label):
     # Declare dictionary to store the full_paths of
     # each image within a site id
     site_path = {}          # dictionary with a list inside
-                            # e.g. [site_id: ]
-
-    """MIGHT NOT NEED THIS VARIABLE"""
-    # Declare dictionary to store file names to name the files
-    img_file_name = {}
+                            # e.g. [site_id: 23]
 
     # Count site_id and append full_file_path
     total_files = 0
@@ -113,6 +110,7 @@ def DataBalancer(images_to_aumgment, label_dir, dest_dir, label):
         # first element is the site_id (a string)
         # second element is the count
 
+        site_index = 0
         for site in site_path[element[0]]: 
             # Now augment the original images,
             # to reach the max. The code is applying
@@ -130,8 +128,8 @@ def DataBalancer(images_to_aumgment, label_dir, dest_dir, label):
             # 1) the end of images_to_augment
             # 2) the end of the multiplier (e.g. ran out of rotations and horizontal flip)
             for i in range(MULTIPLIER*2):
-                print(counter)
-                new_file_name = f"S{site}_D{formatted_date}_{formatted_date}_0_{i}_ROT_AUG_{label}.JPG"
+                basename = os.path.basename(site)
+                new_file_name = f"{basename.split('_')[0]}_D{formatted_date}_{formatted_date}_{site_index}_{i}_ROT_AUG_{label}.JPG"
                 new_destination = os.path.join(dest_dir, new_file_name)
 
                 if counter > images_to_aumgment:       # --> if we reached enough images within the loop
@@ -151,6 +149,7 @@ def DataBalancer(images_to_aumgment, label_dir, dest_dir, label):
                     theta+=5
                     fact+=0.3   # --> these THETA and FACT values ensure no black padding on final image
                 switch_ended+=1
+            site_index+=1
 
 def ImageToAugment():
     """
@@ -199,6 +198,8 @@ def ImageToAugment():
     
     category_2_count = len(category_2_images)
 
+    print(category_2_count)
+
     # Create the destination directories
     dest_label_dirs = [os.path.join(dest_dir, str(i)) for i in range(1, 7)]
     # dest_label_dirs = [os.path.join(dest_dir, "1"), 
@@ -212,26 +213,22 @@ def ImageToAugment():
 
     if category_1_count > category_2_count: 
         print("\nCategory 1 larger than Category 2\n")
-        """ADD THE SECOND HALF HERE"""
-    else: 
-        print("\nCategory 2 larger than Category 1\n")
 
-        images_to_augment = category_2_count - category_1_count
+        images_to_augment = category_1_count - category_2_count
         print(f"Images to augment: {images_to_augment}\n")
 
-        if category_1_count * TOTAL_MULTIPLIER < images_to_augment: 
-            print("Category 1 does not contain enough images to augment to Category 2")
+        if category_2_count * TOTAL_MULTIPLIER < images_to_augment: 
+            print("Category 2 does not contain enough images to augment to Category 1")
             print("The script will terminate...\n")
             return
         
-        print("Category 1 does contain enough images to augment to Category 2")
+        print("Category 2 does contain enough images to augment to Category 1")
         print("Proceeding to augment...\n")
 
-        """ENABLE THIS IN THE MAIN COMPUTER"""
-        # max_workers = 10
-        # with ThreadPoolExecutor(max_workers=max_workers) as executor: 
-        #     executor.map(copy_dir, all_label_dirs, dest_label_dirs)
         print(f"Copying original files to {dest_dir}...\n")
+        max_workers = 10
+        with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+            executor.map(copy_dir, all_label_dirs, dest_label_dirs)
 
         # Get counts of each label in category 1
         category_1_count_split = [
@@ -250,36 +247,91 @@ def ImageToAugment():
         p_label_2 /= p_total
         p_label_3 /= p_total
 
+        print(p_label_1, p_label_2, p_label_3)
+
         # Use numpy to sample which labels to augment
         sample = list(np.random.choice([1, 2, 3], images_to_augment, p=[p_label_1, p_label_2, p_label_3], replace=True))
         
         # Count how many images to augment for each label
         images_to_aug_per_label = [sample.count(1), sample.count(2), sample.count(3)]
 
-        """ADD SUBPROCESS HERE"""
-        for i in range(len(images_to_aug_per_label)):
-            print(f"Augmenting label {i+1}...\n")
-            DataBalancer(images_to_aumgment=images_to_aug_per_label[i], 
-                         label_dir=all_label_dirs[i],
-                         dest_dir=dest_label_dirs[i], 
-                         label=f"L{i+1}")
+        print(images_to_aug_per_label)
+
+        print(images_to_aug_per_label[0] + category_1_count_split[0])
+        print(images_to_aug_per_label[1] + category_1_count_split[1])
+        print(images_to_aug_per_label[2] + category_1_count_split[2])
+
+        max_workers = 10
+        with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+            for i in range(len(images_to_aug_per_label)):
+                print(f"Augmenting label {i+1}...\n")
+                executor.submit(DataBalancer, images_to_aug_per_label[i], 
+                                all_label_dirs[i],
+                                dest_label_dirs[i], 
+                                f"L{i+1}")
+
+    else: 
+        print("\nCategory 2 larger than Category 1\n")
+
+        images_to_augment = category_2_count - category_1_count
+        print(f"Images to augment: {images_to_augment}\n")
+
+        if category_1_count * TOTAL_MULTIPLIER < images_to_augment: 
+            print("Category 1 does not contain enough images to augment to Category 2")
+            print("The script will terminate...\n")
+            return
+        
+        print("Category 1 does contain enough images to augment to Category 2")
+        print("Proceeding to augment...\n")
+
+        print(f"Copying original files to {dest_dir}...\n")
+        max_workers = 10
+        with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+            executor.map(copy_dir, all_label_dirs, dest_label_dirs)
+
+        # Get counts of each label in category 1
+        category_1_count_split = [
+            len(category_1_list[0]), 
+            len(category_1_list[1]), 
+            len(category_1_list[2])]
+        
+        # Compute the complementary probabilities for sampling
+        p_label_1 = 1 - (category_1_count_split[0] / category_1_count)
+        p_label_2 = 1 - (category_1_count_split[1] / category_1_count)
+        p_label_3 = 1 - (category_1_count_split[2] / category_1_count)
+
+        # Normalize the probabilities to 1, before sampling
+        p_total = p_label_1 + p_label_2 + p_label_3
+        p_label_1 /= p_total
+        p_label_2 /= p_total
+        p_label_3 /= p_total
+
+        print(p_label_1, p_label_2, p_label_3)
+
+        # Use numpy to sample which labels to augment
+        sample = list(np.random.choice([1, 2, 3], images_to_augment, p=[p_label_1, p_label_2, p_label_3], replace=True))
+        
+        # Count how many images to augment for each label
+        images_to_aug_per_label = [sample.count(1), sample.count(2), sample.count(3)]
+
+        print(images_to_aug_per_label)
+
+        print(images_to_aug_per_label[0] + category_1_count_split[0])
+        print(images_to_aug_per_label[1] + category_1_count_split[1])
+        print(images_to_aug_per_label[2] + category_1_count_split[2])
+
+        max_workers = 10
+        with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+            for i in range(len(images_to_aug_per_label)):
+                print(f"Augmenting label {i+1}...\n")
+                executor.submit(DataBalancer, images_to_aug_per_label[i], 
+                                all_label_dirs[i],
+                                dest_label_dirs[i], 
+                                f"L{i+1}")
 
 if __name__ == "__main__":
     ImageToAugment()
-    # print(f"\n-----Balancing/augmenting dataset-----\n")
-    # for label in FOLDER_LABELS: 
-    #     print(f"\nProcessing label {label}\n")
-    #     DataBalancer(label, THETA, FACT)
-    # print(f"\n-----Checking if the dataset is balanced-----\n")
-    # for label in FOLDER_LABELS:
-    #     Data_Is_Balanced(f"balanced_{label}")
-    # print(f"\nYou indicated {ADD_DISCARDED} to add discarded data")
-    # if ADD_DISCARDED: 
-    #     for label in FOLDER_LABELS:
-    #         AddDiscardedData(label)
-    #         print(f"\nPlease check your directory for the new folder created with discarded data\nFeel free to merge the two datasets\n")
-        
-    
+    print("\nFinish augmenting the label")
 
 
 
