@@ -15,5 +15,6 @@ balanced_data/
 .ipynb_checkpoints/
 .virtual_documents/
 flow_300_100/
+flow_600_200/
 __pycache__/
 toy_dataset/ 

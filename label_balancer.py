@@ -43,7 +43,8 @@ import os
 import cv2 as cv
 import numpy as np
 import datetime
-from concurrent.futures import ThreadPoolExecutor
+import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Import script to check if data is balanced
 from utils import *
@@ -66,7 +67,6 @@ TOTAL_MULTIPLIER = (MULTIPLIER*2) + 1           # DO NOT CHANGE THIS VALUE
 DATASET_NAME = "flow_600_200"                   # The directory where the labels are stored in
 FOLDER_LABELS = ["1, 2, 3, 4, 5, 6"]            # The directories within DATASET_NAME representing the labels
 DEST_FOLDER = "balanced_data"
-SEED = 42
 
 def DataAugmentation(images_to_aumgment, label_dir, dest_dir, label): 
     """
@@ -257,19 +257,30 @@ def LabelBalancer():
 
         # Comment this out, if you want to double-check if the number
         # of images are the same
-        # print(images_to_aug_per_label[0] + category_1_count_split[0])
-        # print(images_to_aug_per_label[1] + category_1_count_split[1])
-        # print(images_to_aug_per_label[2] + category_1_count_split[2])
+        print("\nLabel 4,5,6 should contain the respective number of images. If not, the balancing was incorrect\n")
+        print(images_to_aug_per_label[0] + category_1_count_split[0])
+        print(images_to_aug_per_label[1] + category_1_count_split[1])
+        print(images_to_aug_per_label[2] + category_1_count_split[2])
+        print()
 
         # Perform the data augmentation in parallel
         max_workers = 10
         with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+            futures = []
             for i in range(len(images_to_aug_per_label)):
                 print(f"Augmenting label {i+3}...\n")
-                executor.submit(DataAugmentation, images_to_aug_per_label[i], 
+                future = executor.submit(DataAugmentation, images_to_aug_per_label[i], 
                                 all_label_dirs[i+3],
                                 dest_label_dirs[i+3], 
                                 f"L{i+4}")
+                futures.append(future)
+                
+        for future in as_completed(futures):
+            try:
+                result = future.result()  # This will raise any exceptions caught in the thread
+                print("Data augmentation task completed successfully.")
+            except Exception as e:
+                print(f"Error in data augmentation: {e}")
 
     # Case #2
     else: 
@@ -320,21 +331,94 @@ def LabelBalancer():
 
         # Comment this out, if you want to double-check if the number
         # of images are the same
-        # print(images_to_aug_per_label[0] + category_1_count_split[0])
-        # print(images_to_aug_per_label[1] + category_1_count_split[1])
-        # print(images_to_aug_per_label[2] + category_1_count_split[2])
+        print("\nLabel 1,2,3 should contain the respective number of images. If not, the balancing was incorrect\n")
+        print(images_to_aug_per_label[0] + category_1_count_split[0])
+        print(images_to_aug_per_label[1] + category_1_count_split[1])
+        print(images_to_aug_per_label[2] + category_1_count_split[2])
+        print()
 
         # Perform the data augmentation in parallel
         max_workers = 10
         with ThreadPoolExecutor(max_workers=max_workers) as executor: 
+            futures = []
             for i in range(len(images_to_aug_per_label)):
                 print(f"Augmenting label {i+1}...\n")
-                executor.submit(DataAugmentation, images_to_aug_per_label[i], 
+                future = executor.submit(DataAugmentation, images_to_aug_per_label[i], 
                                 all_label_dirs[i],
                                 dest_label_dirs[i], 
                                 f"L{i+1}")
+                futures.append(future)
+        for future in as_completed(futures):
+            try:
+                result = future.result()  # This will raise any exceptions caught in the thread
+                print("Data augmentation task completed successfully.")
+            except Exception as e:
+                print(f"Error in data augmentation: {e}")
 
 if __name__ == "__main__":
+    des="""
+    ------------------------------------------
+    - Label Balancer (Overview) -
+
+    Balances and perform the necessary image augmentation
+    (e.g. 5-degree rotations + horizontal flip) to river
+    stream images from CT DEEP, to prepare the dataset for
+    image classification training. This iteration focuses on
+    the two-category problem (label 1,2,3 and label 4,5,6).
+    ------------------------------------------
+    - The Augmentation Process -
+
+    The default augmentations are rotations every 5 degrees (from 5-30) 
+    with horizontal flip before moving to the next degree rotation. The 
+    script will augment the category with the least amount of images. 
+    After determining which category has less images, it will augment more
+    the labels with lesser amount of images, and within each label, it will 
+    augment more the site_ids with the least amount of images. 
+    ------------------------------------------
+    - How to Use -
+
+    > in_dir: directory containing the labeled folders (e.g. 1,2...6)
+    > out_dir (optional)
+    > theta (default=5): the angle of rotation. If you change theta, you must
+    change fact as well
+    > fact (default=1.3): the zoom factor, after rotation.
+    > multiplier (default=6): how many times to rotate. So if it's 6, it will rotate 
+    from 5-30 degrees with horizontal flip in between, with a final 13x multiplier
+    per image
+    ------------------------------------------
+    """
+    # Initialize the Parser
+    parser = argparse.ArgumentParser(description=des.lstrip(" "),formatter_class=argparse.RawTextHelpFormatter)
+
+    # Add the arguments
+    parser.add_argument('--in_dir',type=str,help='input directory of images with labeled subfolders\t[None]')
+    parser.add_argument('--out_dir',type=str,help='output directory prefix\t[None]')
+    parser.add_argument('--theta',type=int,help='the angle of rotation\t[5]')
+    parser.add_argument('--fact', type=int, help='the zoom factor, after rotation\t[1.3]')
+    parser.add_argument('--multiplier',type=int,help='how many times to rotate\t[6]')
+    args = parser.parse_args()
+
+    if args.in_dir is not None:
+        DATASET_NAME = args.in_dir
+    else: raise IOError
+    if args.out_dir is not None:
+        DEST_FOLDER = os.path.join(args.out_dir, "balanced_data")
+    else: DEST_FOLDER
+    if args.theta is not None:
+        THETA = args.theta
+    else: THESE = 5
+    if args.fact is not None:
+        FACT = args.fact
+    else: FACT = 1.3
+    if args.multiplier is not None:
+        MULTIPLIER = args.multiplier
+    else: enh_hrs = 6
+
+    params = {'in_dir':DATASET_NAME,'out_dir':DEST_FOLDER,
+              'theta':THETA,'fact':FACT,'multiplier':MULTIPLIER}
+    print('using params:%s'%params)
+
+    # Call the function
     LabelBalancer()
     print("\nFinish balancing the labels\nCheck your directory for 'balanced_data'")
 
