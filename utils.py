@@ -4,11 +4,11 @@ import os
 import shutil
 
 """
-HELPER FUNCTIONS USED IN
-SITE_ID_BALANCER.PY
+Helper Functions used in label_balancer.py
 """
+
+"""Main Data Augmentation Function"""
 def Data_augmentation(img, THETA, FACT, flipped):
-   """Main Data Augmentation Function"""
    img = cv.imread(img)
    if flipped == False: # if regular rotation
        pad = Pad_img(img)   
@@ -54,6 +54,7 @@ def Center_crop(img, og_img):
    ogy = Get_center(og_row) # ---> image center of original image
    return img[centery-ogy:centery+ogy, centerx-ogx:centerx+ogx]
 
+"""Other Helper Functions"""
 def CreateDir(folder_name):
    if not os.path.exists(folder_name):
        os.makedirs(folder_name)   
@@ -66,7 +67,7 @@ def SortDict(dict):
 def Get_center(coord):
    return ceil((coord-1)/2.0)
 
-def copy_dir(src, dst): 
+def Copy_dir(src, dst): 
    try: 
       shutil.copytree(src, dst)
    except Exception as e:
