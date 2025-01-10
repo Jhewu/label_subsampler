@@ -358,7 +358,7 @@ def LabelBalancer():
 if __name__ == "__main__":
     des="""
     ------------------------------------------
-    - Label Balancer (Overview) -
+    - CT DEEP Label Balancer and Augmentation for Image Classification (Overview) -
 
     Balances and perform the necessary image augmentation
     (e.g. 5-degree rotations + horizontal flip) to river
@@ -412,7 +412,7 @@ if __name__ == "__main__":
     else: FACT = 1.3
     if args.multiplier is not None:
         MULTIPLIER = args.multiplier
-    else: enh_hrs = 6
+    else: MULTIPLIER = 6
 
     params = {'in_dir':DATASET_NAME,'out_dir':DEST_FOLDER,
               'theta':THETA,'fact':FACT,'multiplier':MULTIPLIER}

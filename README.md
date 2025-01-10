@@ -1,4 +1,4 @@
-# CT DEEP Label Balancer and Augmentation (Overview)
+# CT DEEP Label Balancer and Augmentation for Image Classification (Overview)
 
 Balances and performs the necessary image augmentation (e.g., 5-degree rotations + horizontal flip) to river stream images from **CT DEEP**, preparing the dataset for image classification training. This iteration focuses on the **two-category problem** (label 1, 2, 3 and label 4, 5, 6).
 
