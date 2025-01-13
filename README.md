@@ -27,4 +27,4 @@ The script will augment the category with the least amount of images. After dete
 ### Example Usage:
 
 ```bash
-python3 script.py --in_dir "path_to_dataset"
+python3 label_balancer.py --in_dir "path_to_dataset"
