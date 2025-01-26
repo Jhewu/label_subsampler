@@ -18,3 +18,5 @@ flow_300_100/
 flow_600_200/
 __pycache__/
 toy_dataset/ 
+diffusion_data/
+L3/

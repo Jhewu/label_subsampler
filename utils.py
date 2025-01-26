@@ -1,14 +1,15 @@
+"""
+SITE_ID_BALANCER HELPER FUNCTIONS
+"""
 import cv2 as cv
-from math import floor, ceil
-import os
+from math import floor
+from math import ceil
 import shutil
 
-"""
-Helper Functions used in label_balancer.py
-"""
-
-"""Main Data Augmentation Function"""
 def Data_augmentation(img, THETA, FACT, flipped):
+   """
+   Main data augmentation function 
+   """
    img = cv.imread(img)
    if flipped == False: # if regular rotation
        pad = Pad_img(img)   
@@ -21,13 +22,13 @@ def Data_augmentation(img, THETA, FACT, flipped):
        rot = Rotate_img(pad, THETA)
        up = Upsample_img(rot, FACT)
        return Center_crop(up, img)
-
+   
 def Pad_img(img):
    row, col, colors = img.shape
    padding_lr = floor(col/2) # left and right
    padding_tb = floor(row/2) # top and bottom
    return cv.copyMakeBorder(img, padding_tb, padding_tb,
-                       padding_lr, padding_lr, borderType = cv.BORDER_CONSTANT, value = (0, 0, 0))
+                       padding_lr, padding_lr, borderType = cv.BORDER_CONSTANT, value = (0, 0,0))
 def Flip_img(img):
    return cv.flip(img, 1)
 
@@ -54,7 +55,6 @@ def Center_crop(img, og_img):
    ogy = Get_center(og_row) # ---> image center of original image
    return img[centery-ogy:centery+ogy, centerx-ogx:centerx+ogx]
 
-"""Other Helper Functions"""
 def CreateDir(folder_name):
    if not os.path.exists(folder_name):
        os.makedirs(folder_name)   
@@ -72,4 +72,4 @@ def Copy_dir(src, dst):
       shutil.copytree(src, dst)
    except Exception as e:
       print(f"Error copying {src} to {dst}: {e}")
-
+      print("This does not mean the program is not working correctly, it just means that the directory already exists\n")
